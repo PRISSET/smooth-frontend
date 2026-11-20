@@ -66,6 +66,16 @@ If it truly must be client-only, reserve its exact box (aspect-ratio) in the ser
   re-colours over 200 ms under the live clip and frames drop. Render both theme icons and show one via CSS keyed on
   `data-theme` (set by an inline head script before paint), so hydration swaps nothing.
 - **Hover**: no lift/translate on cards unless the user wants it; change colour or radius with a spring.
+- **Page changes start at the top, at once.** Never put `scroll-padding-top` on `<html>` in Next App Router:
+  Next reads it on every navigation, decides the new page's top (under a sticky header) is "not visible" and
+  scrolls to a block further down after render. Use `[id] { scroll-margin-top: ... }` for anchors instead. Scroll
+  to top in a `usePathname` layout effect (skip popstate and `#hash`), and for ~4 s undo any scroll the reader did
+  not cause (no wheel/touch/key/pointer since the navigation) - it fires before paint. Per-page effects do not
+  work: Next mounts the new page hidden, its layout effects run late. Patching `history.pushState` does not work
+  either (Next re-patches it with its own captured original).
+- **Smooth wheel scroll**: Lenis (`lerp` ~0.14, `syncTouch: false`, `allowNestedScroll: true`,
+  `stopInertiaOnNavigate: true`, `anchors: true` - it honours scroll-margin-top), skipped under reduced motion.
+  Copy only the needed rules from lenis.css (its `iframe { pointer-events: none }` breaks embeds).
 - **Route loading fallbacks** (`loading.tsx`): delay them ~350 ms with an animation-delay fade, so fast navigations
   and reloads never flash a skeleton.
 
@@ -92,5 +102,5 @@ absolute number, and let the user confirm on real hardware.
 - [ ] Above-the-fold data rendered on the server (no client-only banners on top)
 - [ ] Fonts: fallback metrics matched; icon font subset + preloaded + `block`
 - [ ] Animations: transform/opacity/clip-path only; no backdrop-filter over moving layers; reduced-motion handled
-- [ ] Menus/tabs/theme switch follow section 5
+- [ ] Menus/tabs/theme switch/page-change scroll follow section 5 (no `scroll-padding-top` on html)
 - [ ] `cls.mjs` = 0.0000 on main pages, desktop and `--mobile`
